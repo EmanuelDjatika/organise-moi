@@ -21,6 +21,7 @@ import {
   X,
   Rows,
   Columns,
+  Dumbbell,
 } from 'lucide-react';
 import type { Task, Category, ViewMode, Horizon, OptimizedScheduleTask, TodayOptimizationResult } from '../types';
 import {
@@ -36,19 +37,23 @@ import { TodayTaskPickerModal } from './TodayTaskPickerModal';
 import { TodayScheduleOptimizerModal } from './TodayScheduleOptimizerModal';
 import { WeekTaskAssignModal } from './WeekTaskAssignModal';
 import { OrgMindmapView } from './OrgMindmapView';
+import { TodaySportExercisesModal } from './TodaySportExercisesModal';
 
 interface CategoryBoardProps {
   tasks: Task[];
   categories: Category[];
   apiKey?: string;
   model?: string;
+  viewMode?: ViewMode;
+  onViewModeChange?: (mode: ViewMode) => void;
   onToggleComplete: (id: string) => void;
   onDeleteTask: (id: string) => void;
   onUpdateTask: (id: string, updates: Partial<Task>) => void;
-  onAddTaskToCategory: (categoryId: string, title: string, horizon?: Horizon, scheduledDate?: string) => void;
+  onAddTaskToCategory: (categoryId: string, title: string, horizon?: Horizon, scheduledDate?: string, subtasks?: string[], notes?: string) => void;
   onReorderTasks?: (orderedTasks: OptimizedScheduleTask[], result?: TodayOptimizationResult) => void;
   onOpenExportModal?: () => void;
   onOpenLifeModal?: () => void;
+  onGoToFitnessPage?: () => void;
   onClearAll?: () => void;
   onDeleteCategory?: (categoryId: string) => void;
 }
@@ -58,6 +63,8 @@ export const CategoryBoard: React.FC<CategoryBoardProps> = ({
   categories,
   apiKey,
   model,
+  viewMode: controlledViewMode,
+  onViewModeChange,
   onToggleComplete,
   onDeleteTask,
   onUpdateTask,
@@ -65,9 +72,24 @@ export const CategoryBoard: React.FC<CategoryBoardProps> = ({
   onReorderTasks,
   onOpenExportModal,
   onOpenLifeModal,
+  onGoToFitnessPage,
   onClearAll,
 }) => {
-  const [viewMode, setViewMode] = useState<ViewMode>('board');
+  const [internalViewMode, setInternalViewMode] = useState<ViewMode>(controlledViewMode || 'board');
+
+  useEffect(() => {
+    if (controlledViewMode !== undefined) {
+      setInternalViewMode(controlledViewMode);
+    }
+  }, [controlledViewMode]);
+
+  const viewMode = controlledViewMode !== undefined ? controlledViewMode : internalViewMode;
+
+  const setViewMode = (mode: ViewMode) => {
+    setInternalViewMode(mode);
+    onViewModeChange?.(mode);
+  };
+
   const [todayLayout, setTodayLayout] = useState<'categories' | 'timeline'>('categories');
   const [categoryLayout, setCategoryLayout] = useState<'shelves' | 'columns'>('shelves');
   const [filterStatus, setFilterStatus] = useState<'all' | 'active' | 'completed' | 'cancelled'>('all');
@@ -77,11 +99,26 @@ export const CategoryBoard: React.FC<CategoryBoardProps> = ({
   const [isPickerModalOpen, setIsPickerModalOpen] = useState(false);
   const [isOptimizerModalOpen, setIsOptimizerModalOpen] = useState(false);
   const [isWeekAssignModalOpen, setIsWeekAssignModalOpen] = useState(false);
+  const [isSportModalOpen, setIsSportModalOpen] = useState(false);
   const searchInputRef = useRef<HTMLInputElement>(null);
 
   const todayStr = getTodayDateStr();
   const weekDays = getCurrentWeekDays();
   const [selectedWeekDay, setSelectedWeekDay] = useState<string>(() => getTodayDateStr());
+
+  // Count sport / exercise tasks scheduled for today
+  const todaySportCount = useMemo(() => {
+    return tasks.filter(
+      (t) =>
+        isTaskOnDate(t, todayStr, todayStr) &&
+        !t.cancelled &&
+        (t.categoryId === 'sport' ||
+          t.title.toLowerCase().startsWith('séance sport') ||
+          t.title.toLowerCase().startsWith('défi du jour') ||
+          t.title.toLowerCase().startsWith('entraînement complet') ||
+          Boolean(t.notes?.includes('espace Sport') || t.notes?.includes('Exercice :')))
+    ).length;
+  }, [tasks, todayStr]);
 
   // Keyboard shortcut listener (/ or Ctrl+K to search, Escape to clear)
   useEffect(() => {
@@ -398,6 +435,18 @@ export const CategoryBoard: React.FC<CategoryBoardProps> = ({
             >
               <Zap size={14} style={{ color: '#b45309' }} />
               <span>Ordonner (IA)</span>
+            </button>
+          )}
+
+          {viewMode === 'today' && (
+            <button
+              type="button"
+              className="btn-today-sport-action font-alamain"
+              onClick={() => setIsSportModalOpen(true)}
+              title="Ajouter les défis et exercices sportifs de la journée"
+            >
+              <Dumbbell size={14} className="text-orange-600" />
+              <span>Sport & Défis {todaySportCount > 0 ? `(${todaySportCount})` : ''}</span>
             </button>
           )}
 
@@ -1050,18 +1099,28 @@ export const CategoryBoard: React.FC<CategoryBoardProps> = ({
             <div>
               <h4 className="font-alamain">Aucune tâche pour aujourd'hui</h4>
               <p className="font-alamain">
-                Sélectionnez parmi vos {todoTotal} tâche(s) sans date.
+                Sélectionnez parmi vos {todoTotal} tâche(s) sans date ou ajoutez vos exercices sportifs du jour.
               </p>
             </div>
           </div>
-          <button
-            type="button"
-            className="btn-pick-today-banner font-alamain"
-            onClick={() => setIsPickerModalOpen(true)}
-          >
-            <ListTodo size={14} />
-            <span>Choisir sans date</span>
-          </button>
+          <div className="today-empty-actions-row">
+            <button
+              type="button"
+              className="btn-pick-sport-banner font-alamain"
+              onClick={() => setIsSportModalOpen(true)}
+            >
+              <Dumbbell size={14} className="text-orange-600" />
+              <span>Ajouter mes exos du jour</span>
+            </button>
+            <button
+              type="button"
+              className="btn-pick-today-banner font-alamain"
+              onClick={() => setIsPickerModalOpen(true)}
+            >
+              <ListTodo size={14} />
+              <span>Choisir sans date ({todoTotal})</span>
+            </button>
+          </div>
         </div>
       )}
 
@@ -1085,9 +1144,24 @@ export const CategoryBoard: React.FC<CategoryBoardProps> = ({
                   Crapaud : <strong>{frogTask.title}</strong>
                 </span>
               )}
+              {todaySportCount > 0 && (
+                <span className="today-strip-sport-tag font-alamain" title={`${todaySportCount} exercice(s) de sport aujourd'hui`}>
+                  <Dumbbell size={12} className="inline text-orange-600 mr-1" />
+                  <strong>{todaySportCount}</strong> exo{todaySportCount > 1 ? 's' : ''} sport
+                </span>
+              )}
             </div>
           </div>
           <div className="today-strip-actions">
+            <button
+              type="button"
+              className="btn-strip-sport font-alamain"
+              onClick={() => setIsSportModalOpen(true)}
+              title="Ajouter des exercices ou défis sportifs pour aujourd'hui"
+            >
+              <Dumbbell size={14} className="text-orange-600" />
+              <span>Sport & Défis</span>
+            </button>
             {orderedTodayCount > 0 && (
               <div className="today-layout-toggle font-alamain">
                 <button
@@ -1859,6 +1933,27 @@ export const CategoryBoard: React.FC<CategoryBoardProps> = ({
         categories={categories}
         onClose={() => setIsWeekAssignModalOpen(false)}
         onAssignTaskToDate={handleAssignTaskToDate}
+      />
+
+      {/* TODAY SPORT & EXERCISES MODAL */}
+      <TodaySportExercisesModal
+        isOpen={isSportModalOpen}
+        categories={categories}
+        existingTasks={tasks}
+        onClose={() => setIsSportModalOpen(false)}
+        onAddTasks={(tasksToAdd) => {
+          tasksToAdd.forEach((item) => {
+            onAddTaskToCategory(
+              item.categoryId,
+              item.title,
+              'today',
+              todayStr,
+              item.subtasks,
+              item.notes
+            );
+          });
+        }}
+        onGoToFitnessPage={onGoToFitnessPage}
       />
     </section>
   );

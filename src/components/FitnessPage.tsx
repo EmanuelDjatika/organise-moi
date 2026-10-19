@@ -12,12 +12,12 @@ import {
   Search,
   Timer,
   Info,
-  ListPlus,
   Check,
   Pause,
   TrendingUp,
   Zap,
-  X
+  X,
+  Sun,
 } from 'lucide-react';
 import type {
   Exercise,
@@ -27,6 +27,8 @@ import type {
   FitnessActivityLog,
   Category,
   Horizon,
+  Task,
+  ViewMode,
 } from '../types';
 import {
   EXERCISES_CATALOG,
@@ -36,10 +38,12 @@ import {
 import { ExerciseIllustration } from './ExerciseIllustration';
 import { loadFitnessState, saveFitnessState } from '../services/storage';
 import { playTaskCompletionSound, playTaskAddSound } from '../utils/soundUtils';
+import { isTaskOnDate } from '../utils/dateUtils';
 import confetti from 'canvas-confetti';
 
 interface FitnessPageProps {
   categories: Category[];
+  tasks?: Task[];
   onAddTaskToBoard: (
     title: string,
     categoryId: string,
@@ -47,7 +51,7 @@ interface FitnessPageProps {
     subtasks?: string[],
     notes?: string
   ) => void;
-  onBackToBoard: () => void;
+  onBackToBoard: (targetViewMode?: ViewMode) => void;
 }
 
 interface SelectedExerciseItem {
@@ -59,6 +63,7 @@ type TabMode = 'catalog' | 'challenges' | 'workout' | 'history';
 
 export const FitnessPage: React.FC<FitnessPageProps> = ({
   categories,
+  tasks,
   onAddTaskToBoard,
   onBackToBoard,
 }) => {
@@ -151,17 +156,55 @@ export const FitnessPage: React.FC<FitnessPageProps> = ({
     });
   };
 
-  // Find health category ID from user categories or default to first
-  const healthCategory = useMemo(() => {
+  // Find sport / health category ID from user categories or default to first
+  const sportCategory = useMemo(() => {
     const found = categories.find(
       (c) =>
+        c.id === 'sport' ||
+        c.name.toLowerCase().includes('sport') ||
+        c.name.toLowerCase().includes('défis') ||
         c.id === 'health' ||
         c.name.toLowerCase().includes('santé') ||
-        c.name.toLowerCase().includes('sport') ||
         c.name.toLowerCase().includes('bien-être')
     );
     return found || categories[0];
   }, [categories]);
+
+  // Check if challenge is already scheduled for today in tasks
+  const isChallengeAddedToday = (challenge: DailyChallenge) => {
+    const targetTitle = `Défi du Jour : ${challenge.title}`;
+    return Boolean(
+      tasks?.some(
+        (t) => isTaskOnDate(t, todayStr, todayStr) && t.title.toLowerCase() === targetTitle.toLowerCase()
+      )
+    );
+  };
+
+  // Check if catalog exercise is already scheduled for today in tasks
+  const isExerciseAddedToday = (exercise: Exercise) => {
+    return Boolean(
+      tasks?.some(
+        (t) =>
+          isTaskOnDate(t, todayStr, todayStr) &&
+          t.title.toLowerCase().includes(exercise.name.toLowerCase())
+      )
+    );
+  };
+
+  const allChallengesAddedToday = dailyChallenges.length > 0 && dailyChallenges.every(isChallengeAddedToday);
+
+  // Total sport tasks scheduled for today
+  const todaySportCount = useMemo(() => {
+    if (!tasks) return 0;
+    return tasks.filter(
+      (t) =>
+        isTaskOnDate(t, todayStr, todayStr) &&
+        (t.categoryId === sportCategory?.id ||
+          t.title.toLowerCase().includes('séance sport') ||
+          t.title.toLowerCase().includes('défi du jour') ||
+          t.title.toLowerCase().includes('entraînement complet'))
+    ).length;
+  }, [tasks, todayStr, sportCategory]);
 
   // Adjust count for an exercise
   const handleSetCount = (exerciseId: string, value: number) => {
@@ -207,8 +250,33 @@ export const FitnessPage: React.FC<FitnessPageProps> = ({
     ];
     const notes = `Exercice : ${exercise.name}\nCatégorie : ${exercise.category}\nMuscles ciblés : ${exercise.muscles.join(', ')}\nConseil : ${exercise.tips.join(' ')}`;
 
-    onAddTaskToBoard(taskTitle, healthCategory.id, 'today', subtasks, notes);
+    onAddTaskToBoard(taskTitle, sportCategory.id, 'today', subtasks, notes);
     playTaskAddSound();
+    confetti({
+      particleCount: 40,
+      spread: 60,
+      origin: { y: 0.6 },
+      colors: ['#ea580c', '#f59e0b', '#10b981', '#3b82f6'],
+    });
+  };
+
+  // Instant action: Add an individual challenge to board tasks
+  const handleAddSingleChallengeToBoard = (challenge: DailyChallenge) => {
+    const taskTitle = `Défi du Jour : ${challenge.title}`;
+    const unitLabel = challenge.unit === 'reps' ? 'répétitions' : 'secondes';
+    const subtasks = [
+      `Objectif : ${challenge.targetCount} ${unitLabel}`,
+      `Série Matin (${Math.ceil(challenge.targetCount / 2)} ${unitLabel})`,
+      `Série Après-midi (${Math.floor(challenge.targetCount / 2)} ${unitLabel})`,
+    ];
+    onAddTaskToBoard(taskTitle, sportCategory.id, 'today', subtasks, challenge.description);
+    playTaskAddSound();
+    confetti({
+      particleCount: 50,
+      spread: 65,
+      origin: { y: 0.6 },
+      colors: ['#ea580c', '#f59e0b', '#10b981', '#3b82f6'],
+    });
   };
 
   // Add entire routine basket to board
@@ -223,8 +291,14 @@ export const FitnessPage: React.FC<FitnessPageProps> = ({
     subtasks.unshift('Échauffement articulaire (3 min)');
     subtasks.push('Étirements de fin de séance (3 min)');
 
-    onAddTaskToBoard(taskTitle, healthCategory.id, 'today', subtasks, 'Séance créée depuis l\'espace Sport');
+    onAddTaskToBoard(taskTitle, sportCategory.id, 'today', subtasks, 'Séance créée depuis l\'espace Sport');
     playTaskAddSound();
+    confetti({
+      particleCount: 60,
+      spread: 70,
+      origin: { y: 0.6 },
+      colors: ['#ea580c', '#f59e0b', '#10b981', '#3b82f6'],
+    });
   };
 
   // Daily Challenge Handlers
@@ -306,14 +380,21 @@ export const FitnessPage: React.FC<FitnessPageProps> = ({
   const handleAddAllChallengesToBoard = () => {
     dailyChallenges.forEach((ch) => {
       const taskTitle = `Défi du Jour : ${ch.title}`;
+      const unitLabel = ch.unit === 'reps' ? 'répétitions' : 'secondes';
       const subtasks = [
-        `Objectif : ${ch.targetCount} ${ch.unit === 'reps' ? 'répétitions' : 'secondes'}`,
-        'Partie 1 (Matin)',
-        'Partie 2 (Après-midi)',
+        `Objectif : ${ch.targetCount} ${unitLabel}`,
+        `Série Matin (${Math.ceil(ch.targetCount / 2)} ${unitLabel})`,
+        `Série Après-midi (${Math.floor(ch.targetCount / 2)} ${unitLabel})`,
       ];
-      onAddTaskToBoard(taskTitle, healthCategory.id, 'today', subtasks, ch.description);
+      onAddTaskToBoard(taskTitle, sportCategory.id, 'today', subtasks, ch.description);
     });
     playTaskAddSound();
+    confetti({
+      particleCount: 70,
+      spread: 80,
+      origin: { y: 0.6 },
+      colors: ['#ea580c', '#f59e0b', '#10b981', '#3b82f6'],
+    });
   };
 
   // Active workout interactive timer logic
@@ -445,11 +526,21 @@ export const FitnessPage: React.FC<FitnessPageProps> = ({
             <button
               type="button"
               className="btn-back-board font-sans"
-              onClick={onBackToBoard}
+              onClick={() => onBackToBoard()}
               title="Retourner au tableau d'organisation"
             >
               <ArrowLeft size={16} />
               <span>Tableau</span>
+            </button>
+            <button
+              type="button"
+              className="btn-go-today font-sans"
+              onClick={() => onBackToBoard('today')}
+              title="Afficher Ma Journée sur le tableau"
+            >
+              <Sun size={15} className="text-amber-500" />
+              <span>Ma Journée</span>
+              {todaySportCount > 0 && <span className="today-sport-nav-badge">{todaySportCount}</span>}
             </button>
             <div className="fitness-brand">
               <div className="fitness-brand-badge">
@@ -721,12 +812,20 @@ export const FitnessPage: React.FC<FitnessPageProps> = ({
                       {/* 2. Add to Board */}
                       <button
                         type="button"
-                        className="btn-exercise-board"
+                        className={`btn-exercise-board ${isExerciseAddedToday(exercise) ? 'is-added' : ''}`}
                         onClick={() => handleAddSingleToBoard(exercise)}
-                        title="Créer une tâche sur le tableau d'organisation"
+                        title={
+                          isExerciseAddedToday(exercise)
+                            ? 'Déjà dans Ma Journée (cliquez pour ajouter une autre série)'
+                            : 'Ajouter cet exercice à Ma Journée'
+                        }
                       >
-                        <ListPlus size={15} />
-                        <span>Au tableau</span>
+                        {isExerciseAddedToday(exercise) ? (
+                          <Check size={14} />
+                        ) : (
+                          <Sun size={14} className="text-amber-500" />
+                        )}
+                        <span>{isExerciseAddedToday(exercise) ? 'Dans Ma Journée' : '+ Ma Journée'}</span>
                       </button>
 
                       {/* 3. Add / Remove to Routine Basket */}
@@ -780,12 +879,21 @@ export const FitnessPage: React.FC<FitnessPageProps> = ({
               <div className="challenges-banner-actions">
                 <button
                   type="button"
-                  className="btn-banner-action font-sans"
+                  className={`btn-banner-action font-sans ${allChallengesAddedToday ? 'is-added' : ''}`}
                   onClick={handleAddAllChallengesToBoard}
-                  title="Planifier tous les défis du jour dans vos tâches"
+                  title="Planifier tous les défis du jour dans Ma Journée"
                 >
-                  <ListPlus size={16} />
-                  <span>Planifier sur le Tableau</span>
+                  {allChallengesAddedToday ? (
+                    <>
+                      <Check size={16} />
+                      <span>3 défis dans Ma Journée</span>
+                    </>
+                  ) : (
+                    <>
+                      <Sun size={16} className="text-amber-300" />
+                      <span>Ajouter tous les défis à Ma Journée</span>
+                    </>
+                  )}
                 </button>
               </div>
             </div>
@@ -875,6 +983,32 @@ export const FitnessPage: React.FC<FitnessPageProps> = ({
                           {isCompleted ? 'Réinitialiser' : 'Tout valider'}
                         </button>
                       </div>
+
+                      {/* Challenge Add to Ma Journee Button */}
+                      <div className="challenge-card-footer-actions">
+                        <button
+                          type="button"
+                          className={`btn-challenge-board ${isChallengeAddedToday(challenge) ? 'is-added' : ''}`}
+                          onClick={() => handleAddSingleChallengeToBoard(challenge)}
+                          title={
+                            isChallengeAddedToday(challenge)
+                              ? 'Déjà dans Ma Journée'
+                              : 'Ajouter ce défi à Ma Journée'
+                          }
+                        >
+                          {isChallengeAddedToday(challenge) ? (
+                            <>
+                              <Check size={14} />
+                              <span>Dans Ma Journée</span>
+                            </>
+                          ) : (
+                            <>
+                              <Sun size={14} className="text-amber-500" />
+                              <span>+ Ajouter à Ma Journée</span>
+                            </>
+                          )}
+                        </button>
+                      </div>
                     </div>
                   </div>
                 );
@@ -900,10 +1034,10 @@ export const FitnessPage: React.FC<FitnessPageProps> = ({
                   className="btn-routine-action font-sans"
                   onClick={handleAddRoutineToBoard}
                   disabled={routineItems.length === 0}
-                  title="Ajouter toute la séance comme tâche sur le tableau"
+                  title="Ajouter toute la séance comme tâche dans Ma Journée"
                 >
-                  <ListPlus size={16} />
-                  <span>Au Tableau</span>
+                  <Sun size={16} className="text-amber-500" />
+                  <span>À Ma Journée</span>
                 </button>
 
                 <button
@@ -1099,10 +1233,10 @@ export const FitnessPage: React.FC<FitnessPageProps> = ({
               type="button"
               className="btn-routine-drawer-board"
               onClick={handleAddRoutineToBoard}
-              title="Ajouter toute la séance comme tâche sur le tableau"
+              title="Ajouter toute la séance comme tâche dans Ma Journée"
             >
-              <ListPlus size={15} />
-              <span>Au Tableau</span>
+              <Sun size={15} className="text-amber-400" />
+              <span>À Ma Journée</span>
             </button>
 
             <button

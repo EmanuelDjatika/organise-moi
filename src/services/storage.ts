@@ -69,7 +69,7 @@ export function loadCategories(): Category[] {
     const parsed = JSON.parse(raw);
     if (!Array.isArray(parsed) || parsed.length === 0) return DEFAULT_CATEGORIES;
 
-    return parsed.map((cat, idx) => {
+    const list = parsed.map((cat, idx) => {
       const defaultMatch = DEFAULT_CATEGORIES.find((d) => d.id === cat.id);
       const paletteMatch = CATEGORY_PALETTE[idx % CATEGORY_PALETTE.length];
       return {
@@ -79,6 +79,18 @@ export function loadCategories(): Category[] {
         borderColor: cat.borderColor || defaultMatch?.borderColor || paletteMatch.borderColor,
       };
     });
+
+    const hasSport = list.some(
+      (c) => c.id === 'sport' || c.name.toLowerCase().includes('sport')
+    );
+    if (!hasSport) {
+      const sportDefault = DEFAULT_CATEGORIES.find((d) => d.id === 'sport');
+      if (sportDefault) {
+        list.push(sportDefault);
+      }
+    }
+
+    return list;
   } catch (e) {
     console.error('Failed to load categories', e);
     return DEFAULT_CATEGORIES;

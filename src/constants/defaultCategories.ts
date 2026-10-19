@@ -30,6 +30,13 @@ export const DEFAULT_CATEGORIES: Category[] = [
     borderColor: '#fbcfe8',
   },
   {
+    id: 'sport',
+    name: 'Sport & Défis',
+    color: '#ea580c',
+    bgColor: '#fff7ed',
+    borderColor: '#fed7aa',
+  },
+  {
     id: 'shopping',
     name: 'Courses & Achats',
     color: '#b45309',

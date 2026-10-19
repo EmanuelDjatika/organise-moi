@@ -17,6 +17,7 @@ import {
   Undo2,
   ListTree,
   Plus,
+  Dumbbell,
 } from 'lucide-react';
 import confetti from 'canvas-confetti';
 import type { Task, SubTask, Category, Priority, Horizon } from '../types';
@@ -273,6 +274,13 @@ export const TaskItem: React.FC<TaskItemProps> = ({
     DayIcon = Calendar;
   }
 
+  const isSportTask =
+    task.categoryId === 'sport' ||
+    task.title.toLowerCase().startsWith('séance sport') ||
+    task.title.toLowerCase().startsWith('défi du jour') ||
+    task.title.toLowerCase().startsWith('entraînement complet') ||
+    Boolean(task.notes?.includes('espace Sport') || task.notes?.includes('Exercice :'));
+
   if (isEditing) {
     return (
       <form onSubmit={handleSaveEdit} className="task-card task-card-editing">
@@ -495,6 +503,17 @@ export const TaskItem: React.FC<TaskItemProps> = ({
               >
                 <Flame size={11} className="inline mr-1 text-amber-600" />
                 <span>Crapaud</span>
+              </span>
+            )}
+
+            {/* Sport & Défis Badge */}
+            {isSportTask && (
+              <span
+                className="meta-tag task-sport-tag font-alamain"
+                title="Exercice issu de Sport & Défis"
+              >
+                <Dumbbell size={11} className="inline mr-1 text-orange-600" />
+                <span>{task.title.toLowerCase().startsWith('défi') ? 'Défi Sport' : 'Séance Sport'}</span>
               </span>
             )}
 

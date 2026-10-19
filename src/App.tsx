@@ -5,6 +5,8 @@ import { CategoryBoard } from './components/CategoryBoard';
 import { ApiKeyModal } from './components/ApiKeyModal';
 import { ExportModal } from './components/ExportModal';
 import { FavoriteQuotesModal } from './components/FavoriteQuotesModal';
+
+
 import { LifeTasksModal } from './components/LifeTasksModal';
 import { AuthModal } from './components/AuthModal';
 import { AuthPage } from './components/AuthPage';
@@ -28,6 +30,7 @@ import type {
   TodayOptimizationResult,
   BrainstormSession,
   Priority,
+  ViewMode,
 } from './types';
 import {
   loadGroqSettings,
@@ -82,6 +85,7 @@ export function App() {
     return updatedTasks;
   });
   const [categories, setCategories] = useState<Category[]>(() => loadCategories());
+  const [boardViewMode, setBoardViewMode] = useState<ViewMode>('board');
   const [thoughts, setThoughts] = useState<ThoughtEntry[]>(() => loadThoughts());
   const [brainstormSessions, setBrainstormSessions] = useState<BrainstormSession[]>(() => loadBrainstormSessions());
   const [groqSettings, setGroqSettings] = useState<GroqSettings>(() => loadGroqSettings());
@@ -491,7 +495,9 @@ export function App() {
     categoryId: string,
     title: string,
     horizon: Horizon = 'todo',
-    scheduledDate?: string
+    scheduledDate?: string,
+    subtasks?: string[],
+    notes?: string
   ) => {
     const todayStr = getTodayDateStr();
     const finalScheduledDate =
@@ -509,11 +515,18 @@ export function App() {
       scheduledDate: finalScheduledDate,
       completed: false,
       priority: 'medium',
+      subtasks: subtasks?.map((st) => ({
+        id: 'st_' + Math.random().toString(36).substring(2, 8),
+        title: st,
+        completed: false,
+        createdAt: Date.now(),
+      })),
+      notes,
       createdAt: Date.now(),
     };
     setTasks((prev) => [...prev, newTask]);
     playTaskAddSound();
-    showToast('Tâche ajoutée.');
+    showToast(`Tâche « ${title} » ajoutée.`);
   };
 
   const handleClearAll = () => {
@@ -691,16 +704,38 @@ export function App() {
 
   const handleAddTaskFromFitness = (
     title: string,
-    categoryId: string,
+    categoryId?: string,
     horizon: Horizon = 'today',
     subtasks?: string[],
     notes?: string
   ) => {
+    // Find or ensure dedicated Sport & Défis category
+    let targetCatId = categoryId;
+    const sportCat = categories.find(
+      (c) =>
+        c.id === 'sport' ||
+        c.name.toLowerCase().includes('sport') ||
+        c.name.toLowerCase().includes('défis')
+    );
+    if (sportCat) {
+      targetCatId = sportCat.id;
+    } else if (!targetCatId) {
+      const newSportCat: Category = {
+        id: 'sport',
+        name: 'Sport & Défis',
+        color: '#ea580c',
+        bgColor: '#fff7ed',
+        borderColor: '#fed7aa',
+      };
+      setCategories((prev) => [...prev, newSportCat]);
+      targetCatId = newSportCat.id;
+    }
+
     const todayStr = getTodayDateStr();
     const newTask: Task = {
       id: 'task_' + Date.now() + '_' + Math.random().toString(36).substring(2, 8),
       title,
-      categoryId,
+      categoryId: targetCatId,
       horizon,
       scheduledDate: todayStr,
       dueDate: "Aujourd'hui",
@@ -717,7 +752,7 @@ export function App() {
     };
     setTasks((prev) => [...prev, newTask]);
     playTaskAddSound();
-    showToast(`Séance « ${title} » ajoutée au tableau.`);
+    showToast(`Séance « ${title} » ajoutée à Ma Journée !`);
   };
 
   // If checking authentication state on startup
@@ -748,8 +783,12 @@ export function App() {
       {currentPage === 'fitness' ? (
         <FitnessPage
           categories={categories}
+          tasks={tasks}
           onAddTaskToBoard={handleAddTaskFromFitness}
-          onBackToBoard={() => setCurrentPage('board')}
+          onBackToBoard={(mode = 'board') => {
+            setBoardViewMode(mode);
+            setCurrentPage('board');
+          }}
         />
       ) : currentPage === 'brainstorm' ? (
         <BrainstormPage
@@ -816,6 +855,8 @@ export function App() {
               categories={categories}
               apiKey={groqSettings.apiKey}
               model={groqSettings.model}
+              viewMode={boardViewMode}
+              onViewModeChange={setBoardViewMode}
               onToggleComplete={handleToggleComplete}
               onDeleteTask={handleDeleteTask}
               onUpdateTask={handleUpdateTask}
@@ -823,6 +864,7 @@ export function App() {
               onReorderTasks={handleReorderTasks}
               onOpenExportModal={() => setIsExportModalOpen(true)}
               onOpenLifeModal={() => setIsLifeModalOpen(true)}
+              onGoToFitnessPage={() => setCurrentPage('fitness')}
               onClearAll={handleClearAll}
             />
           </main>

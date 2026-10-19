@@ -81,7 +81,7 @@ export const Header: React.FC<HeaderProps> = ({
                 title="Espace Sport, Exercices et Défis Quotidiens"
               >
                 <Dumbbell size={13} />
-                <span>Exercices</span>
+                <span>Sport & Défis</span>
               </button>
             </nav>
           )}

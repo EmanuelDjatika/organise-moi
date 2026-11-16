@@ -1,11 +1,12 @@
 import React, { useState } from 'react';
-import { X, Calendar, Search, Check, ListTodo, Clock } from 'lucide-react';
+import { X, Calendar, Search, Check, ListTodo, Clock, ListTree } from 'lucide-react';
 import type { Task, Category } from '../types';
 import {
   getCurrentWeekDays,
   getTodayDateStr,
   formatShortDayLabel,
 } from '../utils/dateUtils';
+import { sortTasksWithCompletedFirst } from '../utils/taskWeightUtils';
 import confetti from 'canvas-confetti';
 
 interface WeekTaskAssignModalProps {
@@ -152,7 +153,11 @@ export const WeekTaskAssignModal: React.FC<WeekTaskAssignModalProps> = ({
             </div>
           ) : (
             categoriesWithTasks.map((cat) => {
-              const catTasks = candidateTasks.filter((t) => t.categoryId === cat.id);
+              const catTasks = sortTasksWithCompletedFirst(
+                candidateTasks.filter((t) => t.categoryId === cat.id),
+                false,
+                true
+              );
               if (catTasks.length === 0) return null;
 
               return (
@@ -174,6 +179,14 @@ export const WeekTaskAssignModal: React.FC<WeekTaskAssignModalProps> = ({
                           <div className="week-assign-task-info">
                             <span className="week-assign-task-title">{task.title}</span>
                             <div className="week-assign-task-meta">
+                              {task.subtasks && task.subtasks.length > 0 && (
+                                <span className="picker-meta-pill" title="Groupe de tâches avec sous-tâches">
+                                  <ListTree size={11} />
+                                  <span>
+                                    {task.subtasks.filter((s) => s.completed).length}/{task.subtasks.length}
+                                  </span>
+                                </span>
+                              )}
                               {taskDate ? (
                                 <span className="week-assign-current-tag font-alamain">
                                   {taskDate === todayStr ? "Aujourd'hui" : formatShortDayLabel(taskDate)}

@@ -312,6 +312,20 @@ export const CategoryBoard: React.FC<CategoryBoardProps> = ({
 
   const displayCategories = activeCategories.length > 0 ? activeCategories : categories;
 
+  // In "Sans date" mode, put category groups containing tasks at the very top
+  const displayCategoriesForView = useMemo(() => {
+    if (viewMode === 'todo') {
+      return [...displayCategories].sort((a, b) => {
+        const countA = filteredTasks.filter((t) => t.categoryId === a.id && isTaskUnscheduled(t)).length;
+        const countB = filteredTasks.filter((t) => t.categoryId === b.id && isTaskUnscheduled(t)).length;
+        if (countA > 0 && countB === 0) return -1;
+        if (countA === 0 && countB > 0) return 1;
+        return 0;
+      });
+    }
+    return displayCategories;
+  }, [displayCategories, filteredTasks, viewMode]);
+
   if (tasks.length === 0) {
     return (
       <div className="empty-board-minimal">
@@ -1372,7 +1386,7 @@ export const CategoryBoard: React.FC<CategoryBoardProps> = ({
           </div>
         ) : categoryLayout === 'shelves' ? (
             <div className="shelves-container">
-              {displayCategories.map((category) => {
+              {displayCategoriesForView.map((category) => {
                 const categoryTasks = sortTasksWithCompletedFirst(
                   filteredTasks.filter((t) => {
                     if (t.categoryId !== category.id) return false;
@@ -1380,7 +1394,8 @@ export const CategoryBoard: React.FC<CategoryBoardProps> = ({
                     if (viewMode === 'todo') return isTaskUnscheduled(t);
                     return true;
                   }),
-                  viewMode === 'today'
+                  viewMode === 'today',
+                  viewMode === 'todo'
                 );
 
                 const totalInCat = tasks.filter((t) => {
@@ -1527,7 +1542,7 @@ export const CategoryBoard: React.FC<CategoryBoardProps> = ({
             </div>
           ) : (
             <div className="columns-grid-minimal">
-              {displayCategories.map((category) => {
+              {displayCategoriesForView.map((category) => {
                 const categoryTasks = sortTasksWithCompletedFirst(
                   filteredTasks.filter((t) => {
                     if (t.categoryId !== category.id) return false;
@@ -1535,7 +1550,8 @@ export const CategoryBoard: React.FC<CategoryBoardProps> = ({
                     if (viewMode === 'todo') return isTaskUnscheduled(t);
                     return true;
                   }),
-                  viewMode === 'today'
+                  viewMode === 'today',
+                  viewMode === 'todo'
                 );
 
                 const totalInCat = tasks.filter((t) => {

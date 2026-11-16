@@ -1,7 +1,8 @@
 import React, { useState } from 'react';
-import { X, Sun, Search, Plus, Check, ListTodo, Clock } from 'lucide-react';
+import { X, Sun, Search, Plus, Check, ListTodo, Clock, ListTree } from 'lucide-react';
 import type { Task, Category } from '../types';
 import { getTodayDateStr, isTaskOnDate } from '../utils/dateUtils';
+import { sortTasksWithCompletedFirst } from '../utils/taskWeightUtils';
 import confetti from 'canvas-confetti';
 
 interface TodayTaskPickerModalProps {
@@ -148,7 +149,11 @@ export const TodayTaskPickerModal: React.FC<TodayTaskPickerModalProps> = ({
             </div>
           ) : (
             categoriesWithTasks.map((cat) => {
-              const catTasks = candidateTasks.filter((t) => t.categoryId === cat.id);
+              const catTasks = sortTasksWithCompletedFirst(
+                candidateTasks.filter((t) => t.categoryId === cat.id),
+                false,
+                true
+              );
               if (catTasks.length === 0) return null;
 
               return (
@@ -172,6 +177,14 @@ export const TodayTaskPickerModal: React.FC<TodayTaskPickerModalProps> = ({
                           <div className="picker-task-info">
                             <span className="picker-task-title">{task.title}</span>
                             <div className="picker-task-meta">
+                              {task.subtasks && task.subtasks.length > 0 && (
+                                <span className="picker-meta-pill" title="Groupe de tâches avec sous-tâches">
+                                  <ListTree size={11} />
+                                  <span>
+                                    {task.subtasks.filter((s) => s.completed).length}/{task.subtasks.length}
+                                  </span>
+                                </span>
+                              )}
                               {task.estimatedTime && (
                                 <span className="picker-meta-pill">
                                   <Clock size={11} />

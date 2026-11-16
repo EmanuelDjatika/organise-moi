@@ -38,7 +38,7 @@ export function parseEstimatedMinutes(timeStr?: string): number | null {
  */
 export function getTaskWeight(task: Partial<Task>): number {
   const parsedMins = parseEstimatedMinutes(task.estimatedTime);
-  let baseMinutes = 30;
+  let baseMinutes: number;
 
   if (parsedMins && parsedMins > 0) {
     // Clamped between 10 minutes and 240 minutes (4h)
@@ -130,22 +130,45 @@ export function calculateTodayEvolutionStats(todayTasks: Task[]): TodayEvolution
 /**
  * Sorts tasks so that:
  * 1. Cancelled tasks are placed at the bottom
- * 2. Completed tasks are placed at the top (before remaining tasks)
- * 3. Daily AI order is respected if in today mode
- * 4. Most recent creation date as tie-breaker
+ * 2. In "Sans date" (todo) mode: task groups containing tasks (with subtasks) are placed at the very top ("tout en haut")
+ * 3. Completed tasks are placed at the top in today/board modes
+ * 4. Daily AI order is respected if in today mode
+ * 5. Most recent creation date as tie-breaker
  */
 export function sortTasksWithCompletedFirst(
   tasks: Task[],
-  isTodayMode: boolean = false
+  isTodayMode: boolean = false,
+  isTodoMode: boolean = false
 ): Task[] {
   return [...tasks].sort((a, b) => {
     // 1. Cancelled tasks at the bottom
     if (a.cancelled && !b.cancelled) return 1;
     if (!a.cancelled && b.cancelled) return -1;
 
-    // 2. Completed tasks before remaining tasks
-    if (a.completed && !b.completed) return -1;
-    if (!a.completed && b.completed) return 1;
+    // 2. In "Sans date" (todo) mode: task groups containing tasks (with subtasks) tout en haut
+    if (isTodoMode) {
+      const aHasSubtasks = Boolean(a.subtasks && a.subtasks.length > 0);
+      const bHasSubtasks = Boolean(b.subtasks && b.subtasks.length > 0);
+
+      const aIsActiveGroup = !a.completed && aHasSubtasks;
+      const bIsActiveGroup = !b.completed && bHasSubtasks;
+
+      // Active groups containing tasks at the very top
+      if (aIsActiveGroup && !bIsActiveGroup) return -1;
+      if (!aIsActiveGroup && bIsActiveGroup) return 1;
+
+      // Active tasks before completed tasks
+      if (!a.completed && b.completed) return -1;
+      if (a.completed && !b.completed) return 1;
+
+      // Among completed tasks, completed groups with subtasks before completed single tasks
+      if (aHasSubtasks && !bHasSubtasks) return -1;
+      if (!aHasSubtasks && bHasSubtasks) return 1;
+    } else {
+      // Completed tasks before remaining tasks in other modes
+      if (a.completed && !b.completed) return -1;
+      if (!a.completed && b.completed) return 1;
+    }
 
     // 3. Today AI order
     if (isTodayMode) {

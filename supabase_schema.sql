@@ -158,3 +158,22 @@ DROP TRIGGER IF EXISTS on_auth_user_created ON auth.users;
 CREATE TRIGGER on_auth_user_created
   AFTER INSERT ON auth.users
   FOR EACH ROW EXECUTE FUNCTION public.handle_new_user_categories();
+
+-- ==========================================
+-- 6. Facture de la maison (un état par utilisateur)
+-- ==========================================
+CREATE TABLE IF NOT EXISTS house_bill (
+  user_id UUID PRIMARY KEY REFERENCES auth.users(id) ON DELETE CASCADE DEFAULT auth.uid(),
+  state JSONB NOT NULL,
+  updated_at TIMESTAMPTZ DEFAULT NOW()
+);
+
+ALTER TABLE house_bill ENABLE ROW LEVEL SECURITY;
+
+DROP POLICY IF EXISTS "Users can view own house bill" ON house_bill;
+DROP POLICY IF EXISTS "Users can insert own house bill" ON house_bill;
+DROP POLICY IF EXISTS "Users can update own house bill" ON house_bill;
+
+CREATE POLICY "Users can view own house bill" ON house_bill FOR SELECT USING (auth.uid() = user_id);
+CREATE POLICY "Users can insert own house bill" ON house_bill FOR INSERT WITH CHECK (auth.uid() = user_id);
+CREATE POLICY "Users can update own house bill" ON house_bill FOR UPDATE USING (auth.uid() = user_id);

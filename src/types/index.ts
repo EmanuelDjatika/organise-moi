@@ -80,7 +80,7 @@ export interface ThoughtEntry {
   analysis?: AIThoughtAnalysis;
 }
 
-export type AppPage = 'board' | 'thoughts' | 'brainstorm' | 'fitness';
+export type AppPage = 'board' | 'thoughts' | 'brainstorm' | 'fitness' | 'house';
 
 export type ExerciseCategory = 'cardio' | 'upper_body' | 'abs_core' | 'lower_body' | 'mobility';
 export type ExerciseUnit = 'reps' | 'seconds';

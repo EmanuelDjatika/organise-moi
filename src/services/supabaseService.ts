@@ -646,3 +646,47 @@ export async function syncInitialDataFromSupabase(): Promise<{
     brainstorms: brainstorms || undefined,
   };
 }
+
+// ==========================================
+// HOUSE BILL (Facture maison)
+// ==========================================
+
+export async function fetchHouseBillFromSupabase<T>(): Promise<T | null> {
+  if (!isSupabaseConfigured || !supabase) return null;
+  try {
+    const user = (await supabase.auth.getUser()).data.user;
+    if (!user) return null;
+    const { data, error } = await supabase
+      .from('house_bill')
+      .select('state')
+      .eq('user_id', user.id)
+      .maybeSingle();
+    if (error) {
+      console.warn('Supabase fetch house bill error:', error.message);
+      return null;
+    }
+    return (data?.state as T) ?? null;
+  } catch (e) {
+    console.warn('Supabase fetch house bill exception:', e);
+    return null;
+  }
+}
+
+export async function saveHouseBillToSupabase(state: unknown): Promise<boolean> {
+  if (!isSupabaseConfigured || !supabase) return false;
+  try {
+    const user = (await supabase.auth.getUser()).data.user;
+    if (!user) return false;
+    const { error } = await supabase
+      .from('house_bill')
+      .upsert({ user_id: user.id, state, updated_at: new Date().toISOString() });
+    if (error) {
+      console.warn('Supabase save house bill error:', error.message);
+      return false;
+    }
+    return true;
+  } catch (e) {
+    console.warn('Supabase save house bill exception:', e);
+    return false;
+  }
+}

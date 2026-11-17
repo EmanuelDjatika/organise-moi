@@ -15,8 +15,9 @@ import { ConfirmDeleteModal } from './components/ConfirmDeleteModal';
 import { ThoughtsJournalPage } from './components/ThoughtsJournalPage';
 import { BrainstormPage } from './components/BrainstormPage';
 import { FitnessPage } from './components/FitnessPage';
+import { HouseBillPage } from './components/HouseBillPage';
 import { AIBanner } from './components/AIBanner';
-import { Leaf, Brain, Compass, Dumbbell } from 'lucide-react';
+import { Leaf, Brain, Compass, Dumbbell, Home } from 'lucide-react';
 import type { User } from '@supabase/supabase-js';
 import type {
   Task,
@@ -780,7 +781,9 @@ export function App() {
       {/* Toast Notification */}
       {toastMessage && <div className="toast-notification font-alamain">{toastMessage}</div>}
 
-      {currentPage === 'fitness' ? (
+      {currentPage === 'house' ? (
+        <HouseBillPage onBackToBoard={() => setCurrentPage('board')} />
+      ) : currentPage === 'fitness' ? (
         <FitnessPage
           categories={categories}
           tasks={tasks}
@@ -906,6 +909,17 @@ export function App() {
           >
             <Dumbbell size={15} className="floating-fitness-icon" />
             <span>Sport & Défis</span>
+          </button>
+
+          {/* Floating House Bill Pill */}
+          <button
+            type="button"
+            className="floating-house-pill font-sans"
+            onClick={() => setCurrentPage('house')}
+            title="Facture de la maison"
+          >
+            <Home size={15} />
+            <span>Facture maison</span>
           </button>
 
           {/* Floating Life Tasks Pill (Bottom Right) */}

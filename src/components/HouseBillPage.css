@@ -1,0 +1,53 @@
+.hb-page { min-height: 100vh; background: #fff; padding: 24px 16px 48px; max-width: 1100px; margin: 0 auto; color: #1f2937; }
+.hb-header { margin-bottom: 20px; }
+.hb-header h1 { font-size: 26px; margin: 12px 0 4px; }
+.hb-sub { color: #6b7280; margin: 0; }
+.hb-back { display: inline-flex; align-items: center; gap: 6px; background: none; border: 1px solid #e5e7eb; border-radius: 999px; padding: 6px 12px; cursor: pointer; color: #374151; }
+.hb-back:hover { background: #f9fafb; }
+
+.hb-rates { display: grid; grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)); gap: 12px; margin-bottom: 20px; }
+.hb-rates label { display: flex; flex-direction: column; gap: 6px; padding: 12px; border: 1px solid #e5e7eb; border-radius: 12px; background: #fafafa; }
+.hb-rates span { display: inline-flex; align-items: center; gap: 6px; font-size: 13px; font-weight: 600; color: #4b5563; }
+.hb-rates input { padding: 8px; border: 1px solid #d1d5db; border-radius: 8px; font-size: 15px; }
+
+.hb-table-wrap { overflow-x: auto; border: 1px solid #e5e7eb; border-radius: 12px; }
+.hb-table { width: 100%; border-collapse: collapse; font-size: 14px; }
+.hb-table th, .hb-table td { padding: 8px 10px; border-bottom: 1px solid #f1f5f9; text-align: left; white-space: nowrap; }
+.hb-table th { background: #f8fafc; font-weight: 600; color: #475569; font-size: 13px; }
+.hb-table input[type='number'] { width: 100px; padding: 6px; border: 1px solid #d1d5db; border-radius: 6px; }
+.hb-name { width: 120px; padding: 6px; border: 1px solid transparent; border-radius: 6px; background: transparent; }
+.hb-name:hover, .hb-name:focus { border-color: #d1d5db; background: #fff; }
+.hb-num { text-align: right !important; font-variant-numeric: tabular-nums; }
+.hb-total { font-weight: 700; color: #059669; }
+.hb-absent { opacity: 0.5; }
+.hb-invalid { border-color: #ef4444 !important; background: #fef2f2; }
+.hb-table tfoot td { font-weight: 700; background: #f8fafc; border-bottom: none; }
+
+.hb-actions { display: flex; gap: 10px; margin-top: 16px; flex-wrap: wrap; }
+.hb-primary, .hb-ghost { display: inline-flex; align-items: center; gap: 6px; padding: 9px 16px; border-radius: 999px; cursor: pointer; font-weight: 600; }
+.hb-primary { background: #059669; color: #fff; border: none; }
+.hb-primary:hover { background: #047857; }
+.hb-ghost { background: none; border: 1px solid #e5e7eb; color: #6b7280; }
+
+.hb-history { margin-top: 28px; }
+.hb-history h2 { font-size: 18px; }
+.hb-history details { border: 1px solid #e5e7eb; border-radius: 10px; padding: 10px 14px; margin-bottom: 8px; }
+.hb-history summary { cursor: pointer; font-weight: 600; }
+.hb-history ul { margin: 8px 0 0; padding-left: 18px; color: #4b5563; font-size: 14px; }
+
+.floating-house-pill { position: fixed; bottom: 72px; left: 360px; z-index: 45; background: #fff; color: #b45309; border: 1.5px solid #fde68a; border-radius: 999px; padding: 8px 14px; display: inline-flex; align-items: center; gap: 8px; font-size: 14.5px; font-weight: 600; cursor: pointer; }
+.floating-house-pill:hover { background: #fffbeb; border-color: #f59e0b; }
+.hb-help { background: #f0fdf4; border: 1px solid #bbf7d0; border-radius: 10px; padding: 10px 14px; font-size: 14px; color: #166534; margin: 0 0 14px; line-height: 1.5; }
+.hb-print { background: none; border: 1px solid #e5e7eb; border-radius: 8px; padding: 5px 7px; cursor: pointer; color: #475569; display: inline-flex; } .hb-print:hover { background: #f1f5f9; color: #059669; }
+.hb-flat { display: flex; align-items: center; gap: 6px; } .hb-table input:disabled { background: #f1f5f9; color: #94a3b8; }
+.hb-due { background: #fef2f2 !important; border-color: #fecaca !important; } .hb-due span { color: #b91c1c !important; }
+.hb-tank { grid-column: span 2; display: flex; flex-direction: column; gap: 6px; padding: 12px; border: 1px solid #e5e7eb; border-radius: 12px; background: #fafafa; }
+.hb-tank > span { display: inline-flex; align-items: center; gap: 6px; font-size: 13px; font-weight: 600; color: #4b5563; }
+.hb-tank-fields { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; }
+.hb-tank-fields label { display: flex; flex-direction: column; gap: 4px; padding: 0 !important; border: none !important; background: none !important; }
+.hb-tank-fields small { font-size: 12px; color: #6b7280; }
+.hb-tank-fields input { padding: 8px; border: 1px solid #d1d5db; border-radius: 8px; font-size: 15px; min-width: 0; }
+.hb-rates svg { flex-shrink: 0; }
+@media (max-width: 480px) { .hb-tank { grid-column: auto; } }
+.hb-flat-reason { display: block; margin-top: 6px; width: 190px; padding: 6px; border: 1px solid #d1d5db; border-radius: 6px; font-size: 13px; }
+.hb-table input.hb-people { width: 60px; }
